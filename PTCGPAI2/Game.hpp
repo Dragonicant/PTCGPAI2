@@ -27,8 +27,10 @@ public:
 
 class Game {
 public:
-    Game(std::shared_ptr<Deck> player1Deck, std::shared_ptr<Deck> player2Deck);
-    Game(std::shared_ptr<GameState>& state);
+    Game(std::shared_ptr<Deck> player1Deck, std::shared_ptr<Deck> player2Deck, bool silent = false);
+    Game(std::shared_ptr<GameState>& state, bool silent = false);
+
+    void setSilent(bool silent);
 
     std::shared_ptr<GameState> getGameState();
     bool hasNoPokemon(int player);
@@ -61,6 +63,8 @@ private:
     bool gameOver = false;
     int currentPlayer = 0;
     int winner = -1;
+
+    bool silent;
 
     void addEnergyToPlayer(int player);
 };

@@ -3,10 +3,10 @@
 
 #include <iostream>
 #include <vector>
-
-class Card;
+#include <memory>
 
 // Forward declaration to avoid circular dependency
+class Card;
 class ActivePokemon;
 
 using namespace std;

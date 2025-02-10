@@ -41,6 +41,6 @@ std::vector<std::shared_ptr<ActionNode>> generateActionTree(const std::shared_pt
 
 void buildActionTree(std::shared_ptr<ActionNode> node, int depth, const std::vector<Action>& validActions);
 
-void displayActionTree(const std::shared_ptr<ActionNode>& node, int depth);
+void displayActionTree(const std::shared_ptr<ActionNode>& node, int depth, const string& prefix = "");
 
 #endif // ACTION_HPP

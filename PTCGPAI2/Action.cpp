@@ -9,23 +9,31 @@ Action::Action(ActionType type, shared_ptr<Card> card) : type(type), targetCard(
 Action::Action(ActionType type, shared_ptr<ActivePokemon> targetPokemon) : type(type), targetPokemon(targetPokemon) {}
 Action::Action(ActionType type, Attack targetAttack) : type(type), targetAttack(targetAttack) {}
 
-// Function definition
+// Define ANSI color codes
+#define COLOR_RESET   "\033[0m"
+#define COLOR_RED     "\033[31m"
+#define COLOR_GREEN   "\033[32m"
+#define COLOR_YELLOW  "\033[33m"
+#define COLOR_BLUE    "\033[34m"
+#define COLOR_MAGENTA "\033[35m"
+#define COLOR_CYAN    "\033[36m"
+
 void Action::display() const {
     switch (type) {
     case ActionType::PLAY:
-        cout << "Play " << targetCard->name << endl;
+        cout << COLOR_GREEN << "Play " << targetCard->name << COLOR_RESET << endl;
         break;
     case ActionType::ATTACK:
-        cout << "Attack with " << targetAttack.name << endl;
+        cout << COLOR_RED << "Attack with " << targetAttack.name << COLOR_RESET << endl;
         break;
     case ActionType::END_TURN:
-        cout << "End turn" << endl;
+        cout << COLOR_YELLOW << "End turn" << COLOR_RESET << endl;
         break;
     case ActionType::ENERGY:
-        cout << "Attach energy to " << targetPokemon->pokemonCard->name << endl;
+        cout << COLOR_BLUE << "Attach energy to " << targetPokemon->pokemonCard->name << COLOR_RESET << endl;
         break;
     case ActionType::ROOT:
-        cout << "ROOT CASE" << endl;
+        cout << COLOR_MAGENTA << "ROOT CASE" << COLOR_RESET << endl;
         break;
     }
 }
@@ -33,7 +41,7 @@ void Action::display() const {
 ActionNode::ActionNode(shared_ptr<GameState> state, Action action) : state(state), action(action) {}
 
 pair<shared_ptr<GameState>, vector<Action>> applyAction(shared_ptr<GameState>& currentState, const Action& action) {
-    Game newGame = Game(currentState); // Copy the current game state
+    Game newGame(currentState, true); // Copy the current game state
 
     // Apply the action based on type
     switch (action.type) {
@@ -88,18 +96,20 @@ void buildActionTree(shared_ptr<ActionNode> node, int depth, const vector<Action
     }
 }
 
-void displayActionTree(const shared_ptr<ActionNode>& node, int depth) {
-    // Base case: stop if there's no node
+void displayActionTree(const shared_ptr<ActionNode>& node, int depth, const string& prefix) {
     if (!node) return;
 
-    // Indentation based on depth to make the tree visually hierarchical
-    std::string indent(depth * 2, ' ');  // Indentation is two spaces per depth level
-
-    // Display the current action
+    // Display the current action with appropriate indentation and prefix
+    cout << prefix;
+    if (depth > 0) {
+        cout << (node->children.empty() ? "„¤„Ÿ„Ÿ " : "„¥„Ÿ„Ÿ ");
+    }
     node->action.display();
 
     // Recurse through the children
-    for (const auto& child : node->children) {
-        displayActionTree(child, depth + 1);  // Increase depth for child nodes
+    for (size_t i = 0; i < node->children.size(); ++i) {
+        bool isLastChild = (i == node->children.size() - 1);
+        string newPrefix = prefix + (depth > 0 ? (isLastChild ? "    " : "„    ") : "");
+        displayActionTree(node->children[i], depth + 1, newPrefix);
     }
 }

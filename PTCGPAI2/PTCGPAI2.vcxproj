@@ -130,7 +130,6 @@
   <ItemGroup>
     <ClInclude Include="Action.hpp" />
     <ClInclude Include="deck.hpp" />
-    <ClInclude Include="Game.cpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="stages.hpp" />
     <ClInclude Include="types.hpp" />
@@ -138,6 +137,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Action.cpp" />
+    <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameState.cpp" />
     <ClCompile Include="GameState.hpp" />
     <ClCompile Include="main.cpp" />

@@ -38,8 +38,7 @@ void ActivePokemon::displayActivePokemon() const {
     std::cout << std::endl;
 }
 
-Game::Game(shared_ptr<Deck> player1Deck, shared_ptr<Deck> player2Deck, bool silent)
-    : silent(silent) {
+Game::Game(shared_ptr<Deck> player1Deck, shared_ptr<Deck> player2Deck) {
     // Create shallow copies of the player decks for use in the game state
     playerDecks[0] = player1Deck;
     playerDecks[1] = player2Deck;
@@ -70,8 +69,7 @@ Game::Game(shared_ptr<Deck> player1Deck, shared_ptr<Deck> player2Deck, bool sile
     drawInitialCards(1);  // Draw 5 cards for Player 2
 }
 
-Game::Game(std::shared_ptr<GameState>& state, bool silent) 
-    : silent(silent) {
+Game::Game(std::shared_ptr<GameState>& state) {
     // Restore player points
     playerPoints[0] = state->playerPoints[0];
     playerPoints[1] = state->playerPoints[1];
@@ -105,11 +103,6 @@ Game::Game(std::shared_ptr<GameState>& state, bool silent)
     gameOver = state->gameOver;
     currentPlayer = state->currentPlayer;
     winner = state->winner;
-}
-
-// Set silent mode
-void Game::setSilent(bool silent) {
-    this->silent = silent;
 }
 
 std::shared_ptr<GameState> Game::getGameState() {
@@ -165,26 +158,22 @@ bool Game::hasNoPokemon(int player) {
 // Function to check for a winner (either 3 points or no Pokemon left for a player)
 void Game::checkForWinner() {
     if (playerPoints[0] >= 3) {
-        if(!silent)
-            cout << "Player 1 wins with 3 points!" << endl;
+        cout << "Player 1 wins with 3 points!" << endl;
         winner = 0;  // Set winner to Player 1
         gameOver = true;
     }
     else if (playerPoints[1] >= 3) {
-        if (!silent)
-            cout << "Player 2 wins with 3 points!" << endl;
+        cout << "Player 2 wins with 3 points!" << endl;
         winner = 1;  // Set winner to Player 2
         gameOver = true;
     }
     else if (hasNoPokemon(0)) {
-        if (!silent)
-            cout << "Player 1 has no Pokemon left. Player 2 wins!" << endl;
+        cout << "Player 1 has no Pokemon left. Player 2 wins!" << endl;
         winner = 1;  // Set winner to Player 2
         gameOver = true;
     }
     else if (hasNoPokemon(1)) {
-        if (!silent)
-            cout << "Player 2 has no Pokemon left. Player 1 wins!" << endl;
+        cout << "Player 2 has no Pokemon left. Player 1 wins!" << endl;
         winner = 0;  // Set winner to Player 1
         gameOver = true;
     }
@@ -265,25 +254,20 @@ vector<Action> Game::getValidActions() {
 void Game::displayValidActions() {
     vector<Action> actions = getValidActions();
 
-    if (!silent)
-        cout << "Player " << currentPlayer + 1 << " can perform the following actions:" << endl;
+    cout << "Player " << currentPlayer + 1 << " can perform the following actions:" << endl;
     for (const Action& action : actions) {
         switch (action.type) {
         case ActionType::PLAY:
-            if (!silent)
-                cout << "Play " << action.targetCard->name << endl;
+            cout << "Play " << action.targetCard->name << endl;
             break;
         case ActionType::ATTACK:
-            if (!silent)
-                cout << "Attack with " << playerActiveSpots[currentPlayer]->pokemonCard->name << " using " << action.targetAttack.name << " for " << action.targetAttack.damage << endl;
+            cout << "Attack with " << playerActiveSpots[currentPlayer]->pokemonCard->name << " using " << action.targetAttack.name << " for " << action.targetAttack.damage << endl;
             break;
         case ActionType::ENERGY:
-            if (!silent)
-                cout << "Attach " << playerAvailableEnergy[currentPlayer] << " to " << action.targetPokemon->pokemonCard->name << endl;
+            cout << "Attach " << playerAvailableEnergy[currentPlayer] << " to " << action.targetPokemon->pokemonCard->name << endl;
             break;
         case ActionType::END_TURN:
-            if (!silent)
-                cout << "End turn" << endl;
+            cout << "End turn" << endl;
             break;
 
         }
@@ -292,8 +276,7 @@ void Game::displayValidActions() {
 
 void Game::shuffleDeck(int player) {
     shuffle(gameDecks[player].begin(), gameDecks[player].end(), default_random_engine(random_device()()));
-    if (!silent)
-        cout << "Player " << player + 1 << "'s deck has been shuffled.\n";
+    cout << "Player " << player + 1 << "'s deck has been shuffled.\n";
 }
 
 // Function to draw 5 cards for a player
@@ -306,15 +289,13 @@ void Game::drawInitialCards(int player) {
         }
     }
 
-    if (!silent)
-        cout << "Player " << player + 1 << " has drawn 5 cards." << endl;
+    cout << "Player " << player + 1 << " has drawn 5 cards." << endl;
 }
 
 // Draws a card from the deck and returns it
 shared_ptr<Card> Game::drawCard(int player) {
     if (gameDecks[player].empty()) {
-        if (!silent)
-            cout << "Player " << player + 1 << "'s deck is empty.\n";
+        cout << "Player " << player + 1 << "'s deck is empty.\n";
         return nullptr;
     }
     shared_ptr<Card> cardToDraw = gameDecks[player].back();
@@ -325,14 +306,11 @@ shared_ptr<Card> Game::drawCard(int player) {
 // Method to show each player's hand
 void Game::showHands() const {
     for (int i = 0; i < 2; ++i) {
-        if (!silent)
-            cout << "Player " << i + 1 << " hand:" << endl;
+        cout << "Player " << i + 1 << " hand:" << endl;
         for (const auto& card : playerHands[i]) {
-            if (!silent)
-                cout << card->name << endl;  // Assuming Card has a name field
+            cout << card->name << endl;  // Assuming Card has a name field
         }
-        if (!silent)
-            cout << endl;
+        cout << endl;
     }
 }
 
@@ -348,8 +326,7 @@ bool Game::playPokemon(int player, shared_ptr<Card> card) {
         [&card](const shared_ptr<Card>& c) { return c == card; });
 
     if (it == playerHands[player].end()) {
-        if (!silent)
-            cout << "Player " << player + 1 << " does not have the specified card in hand." << endl;
+        cout << "Player " << player + 1 << " does not have the specified card in hand." << endl;
         return false;
     }
 
@@ -357,19 +334,16 @@ bool Game::playPokemon(int player, shared_ptr<Card> card) {
     if (playerActiveSpots[player] == nullptr && playerBenchSpots[player].size() < 5) {
         // If no Pokemon is in the active spot, create an ActivePokemon and place it there
         playerActiveSpots[player] = make_shared<ActivePokemon>(card); // Assume the original card has an `hp` field
-        if (!silent)
-            cout << "Player " << player + 1 << " played " << card->name << " to their active spot." << endl;
+        cout << "Player " << player + 1 << " played " << card->name << " to their active spot." << endl;
     }
     else if (playerActiveSpots[player] != nullptr && playerBenchSpots[player].size() < 5) {
         // If there is a Pokemon in the active spot, create an ActivePokemon and place it on the bench
         playerBenchSpots[player].push_back(make_shared<ActivePokemon>(card));
-        if (!silent)
-            cout << "Player " << player + 1 << " played " << card->name << " to their bench." << endl;
+        cout << "Player " << player + 1 << " played " << card->name << " to their bench." << endl;
     }
     else {
         // No space to play Pokemon
-        if (!silent)
-            cout << "Player " << player + 1 << " cannot play " << card->name << " due to no available spots." << endl;
+        cout << "Player " << player + 1 << " cannot play " << card->name << " due to no available spots." << endl;
         return false;
     }
 
@@ -381,16 +355,14 @@ bool Game::playPokemon(int player, shared_ptr<Card> card) {
 bool Game::attachEnergy(shared_ptr<ActivePokemon> targetPokemon) {
     // Check if the player has energy available
     if (playerAvailableEnergy[currentPlayer] == 'X') {
-        if (!silent)
-            cout << "Player " << currentPlayer + 1 << " does not have energy available.\n";
+        cout << "Player " << currentPlayer + 1 << " does not have energy available.\n";
         return false;
     }
 
     // Add energy to the chosen Pokemon
     targetPokemon->currentEnergy.push_back(playerAvailableEnergy[currentPlayer]);
 
-    if (!silent)
-        cout << "Player " << currentPlayer + 1 << " attached " << playerAvailableEnergy[currentPlayer] << " energy to " << targetPokemon->pokemonCard->name << ".\n";
+    cout << "Player " << currentPlayer + 1 << " attached " << playerAvailableEnergy[currentPlayer] << " energy to " << targetPokemon->pokemonCard->name << ".\n";
     playerAvailableEnergy[currentPlayer] = 'X';
     return true;
 }
@@ -400,24 +372,21 @@ void Game::performAttack(Attack attack) {
     shared_ptr<ActivePokemon> defender = playerActiveSpots[1 - currentPlayer];
 
     if (!attacker || !defender) {
-        if (!silent)
-            cout << "Attack not possible: One or both active Pokemon are missing!" << endl;
+        cout << "Attack not possible: One or both active Pokemon are missing!" << endl;
         return;
     }
 
     string attackName = attack.name;  // Use the provided attack
     int damage = attack.damage;       // Use the damage from the provided attack
 
-    if (!silent)
-        cout << "Player " << currentPlayer + 1 << "'s " << attacker->pokemonCard->name
-            << " attacks " << defender->pokemonCard->name
-            << " using " << attackName << " for " << damage << " damage!" << endl;
+    cout << "Player " << currentPlayer + 1 << "'s " << attacker->pokemonCard->name
+        << " attacks " << defender->pokemonCard->name
+        << " using " << attackName << " for " << damage << " damage!" << endl;
 
     // Reduce defender's HP
     defender->currentHP -= damage;
     if (defender->currentHP <= 0) {
-        if (!silent)
-            cout << defender->pokemonCard->name << " is knocked out!" << endl;
+        cout << defender->pokemonCard->name << " is knocked out!" << endl;
         playerPoints[currentPlayer]++;
 
         // Remove the defeated Pokemon
@@ -425,8 +394,7 @@ void Game::performAttack(Attack attack) {
 
         // Check if the opponent has any Pokemon left
         if (playerBenchSpots[1 - currentPlayer].empty()) {
-            if (!silent)
-                cout << "Player " << currentPlayer + 1 << " wins the game!" << endl;
+            cout << "Player " << currentPlayer + 1 << " wins the game!" << endl;
             gameOver = true;
             winner = currentPlayer;
         }
@@ -451,30 +419,25 @@ void Game::removeCardFromHand(int player, shared_ptr<Card> cardToRemove) {
 // Function to display the board with the specific ASCII art pattern
 void Game::displayBoard() const {
     // Display Player 2's Bench (top row)
-    if (!silent)
-        cout << (playerBenchSpots[1].size() > 0 ? playerBenchSpots[1][0]->pokemonCard->name : "Empty") << "  "
-            << (playerBenchSpots[1].size() > 1 ? playerBenchSpots[1][1]->pokemonCard->name : "Empty") << "  "
-            << (playerBenchSpots[1].size() > 2 ? playerBenchSpots[1][2]->pokemonCard->name : "Empty") << endl;
+    cout << (playerBenchSpots[1].size() > 0 ? playerBenchSpots[1][0]->pokemonCard->name : "Empty") << "  "
+        << (playerBenchSpots[1].size() > 1 ? playerBenchSpots[1][1]->pokemonCard->name : "Empty") << "  "
+        << (playerBenchSpots[1].size() > 2 ? playerBenchSpots[1][2]->pokemonCard->name : "Empty") << endl;
 
     // Display Player 2's Active (middle row)
-    if (!silent)
-        cout << "        " << (playerActiveSpots[1] != nullptr ? playerActiveSpots[1]->pokemonCard->name : "Empty") << endl;
+    cout << "        " << (playerActiveSpots[1] != nullptr ? playerActiveSpots[1]->pokemonCard->name : "Empty") << endl;
 
     // Display Player 1's Active (middle row)
-    if (!silent)
-        cout << "        " << (playerActiveSpots[0] != nullptr ? playerActiveSpots[0]->pokemonCard->name : "Empty") << endl;
+    cout << "        " << (playerActiveSpots[0] != nullptr ? playerActiveSpots[0]->pokemonCard->name : "Empty") << endl;
 
     // Display Player 1's Bench (bottom row)
-    if (!silent)
-        cout << (playerBenchSpots[0].size() > 0 ? playerBenchSpots[0][0]->pokemonCard->name : "Empty") << "  "
-            << (playerBenchSpots[0].size() > 1 ? playerBenchSpots[0][1]->pokemonCard->name : "Empty") << "  "
-            << (playerBenchSpots[0].size() > 2 ? playerBenchSpots[0][2]->pokemonCard->name : "Empty") << endl;
-    }
+    cout << (playerBenchSpots[0].size() > 0 ? playerBenchSpots[0][0]->pokemonCard->name : "Empty") << "  "
+        << (playerBenchSpots[0].size() > 1 ? playerBenchSpots[0][1]->pokemonCard->name : "Empty") << "  "
+        << (playerBenchSpots[0].size() > 2 ? playerBenchSpots[0][2]->pokemonCard->name : "Empty") << endl;
+}
 
 // Method to start a new turn for the player
 void Game::endTurn() {
-    if (!silent)
-        cout << "Player " << currentPlayer + 1 << "'s turn has ended." << endl;
+    cout << "Player " << currentPlayer + 1 << "'s turn has ended." << endl;
     playerAvailableEnergy[currentPlayer] = 'X';  // Clear the available energy
     // Change turn to the next player
     currentPlayer = (currentPlayer + 1) % 2;
