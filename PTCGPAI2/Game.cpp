@@ -121,10 +121,8 @@ Game::Game(const std::shared_ptr<GameState>& state, bool silent)
     gameOver = state->gameOver;
     currentPlayer = state->currentPlayer;
     winner = state->winner;
-    damageDealt->push_back(0);
-    damageDealt->push_back(0);
-    damageDealt->at(0) = state->damageDealt[0];
-    damageDealt->at(0) = state->damageDealt[1];
+    damageDealt->push_back(state->damageDealt[0]);
+    damageDealt->push_back(state->damageDealt[1]);
 }
 
 // Getter for playerActiveSpots
@@ -190,8 +188,9 @@ std::shared_ptr<GameState> Game::getGameState() {
     // Set winner
     state->winner = winner;
 
-    state->damageDealt.at(0) = damageDealt->at(0);
-    state->damageDealt.at(1) = damageDealt->at(1);
+    // Save damageDealt
+    state->damageDealt[0] = damageDealt[0].empty() ? 0 : damageDealt[0][0];
+    state->damageDealt[1] = damageDealt[1].empty() ? 0 : damageDealt[1][0];
 
     return state;
 }

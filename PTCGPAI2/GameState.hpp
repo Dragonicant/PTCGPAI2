@@ -33,7 +33,7 @@ struct GameState {
     int currentPlayer = -1;  // Index of the current player (0 or 1)
     int winner;  // Index of the winner (0 for Player 1, 1 for Player 2, -1 if no winner yet)
 
-    vector<int> damageDealt;  // Total damage dealt by each player
+    vector<int> damageDealt = { 0, 0 };  // Total damage dealt by each player
 };
 
 void displayGameState(const shared_ptr<GameState>& state);

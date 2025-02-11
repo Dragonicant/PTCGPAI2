@@ -40,6 +40,17 @@ void Action::display() const {
 
 ActionNode::ActionNode(shared_ptr<GameState> state, Action action) : state(state), action(action) {}
 
+string displayActionName(shared_ptr<ActionNode> node) {
+    switch (node->action.type) {
+    case ActionType::ROOT: return "Root";
+    case ActionType::PLAY: return "Play";
+    case ActionType::ATTACK: return "Attack";
+    case ActionType::END_TURN: return "End Turn";
+    case ActionType::ENERGY: return "Energy";
+    default: return "Unknown";
+    }
+}
+
 void applyAction(Game& game, const Action& action) {
     // Apply the action based on type
     switch (action.type) {

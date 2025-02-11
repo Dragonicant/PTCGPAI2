@@ -1,6 +1,7 @@
 #include "aiFunctions.hpp"
 #include "GameState.hpp"
 #include "Action.hpp"
+#include "Game.hpp"
 
 #include <memory>
 
@@ -18,8 +19,8 @@ int evaluateGameState(const shared_ptr<GameState>& state, int currentPlayer) {
     score -= state->playerBenchSpots[opponent].size() * 10;
 
     // Reward damage dealt (assuming 'damageDealt' holds total damage by player)
-    score += state->damageDealt[currentPlayer] * 5;  // Adjust multiplier as needed
-    score -= state->damageDealt[opponent] * 5;  // Reduce opponent's score based on their damage
+    score += state->playerActiveSpots[opponent]->pokemonCard->hp - state->playerActiveSpots[opponent]->currentHP;
+    score -= state->playerActiveSpots[currentPlayer]->pokemonCard->hp - state->playerActiveSpots[currentPlayer]->currentHP;
 
     return score;
 }
@@ -27,20 +28,27 @@ int evaluateGameState(const shared_ptr<GameState>& state, int currentPlayer) {
 pair<int, Action> minimax(shared_ptr<ActionNode> node, int depth, bool maximizingPlayer, int currentPlayer) {
     if (depth == 0 || node->children.empty()) {
         int evaluation = evaluateGameState(node->state, currentPlayer);
+        cout << "Leaf Node Score: " << evaluation << " " << displayActionName(node) << endl;
         return { evaluation, node->action };
     }
 
     if (maximizingPlayer) {
         int maxEval = INT_MIN;
         Action bestAction = node->children[0]->action;
-
-        for (auto& child : node->children) {    
+        cout << "Checking all children of";
+        node->action.display();
+        displayActionTree(node);
+        for (auto& child : node->children) {
+            cout << "Evaluating ";
+            child->action.display();
             int eval = minimax(child, depth - 1, false, currentPlayer).first;
+            cout << eval << endl;
             if (eval > maxEval) {
                 maxEval = eval;
                 bestAction = child->action;
             }
         }
+        bestAction.display();
         return { maxEval, bestAction };
     }
     else { // Opponent's turn (minimizing)

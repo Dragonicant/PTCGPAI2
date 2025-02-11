@@ -36,6 +36,8 @@ struct ActionNode {
     ActionNode(std::shared_ptr<GameState> state, Action action);
 };
 
+string displayActionName(std::shared_ptr<ActionNode> node);
+
 void applyAction(Game& game, const Action& action);
 std::pair<std::shared_ptr<GameState>, std::vector<Action>> applyAction(const std::shared_ptr<GameState>& currentState, const Action& action);
 

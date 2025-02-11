@@ -79,7 +79,7 @@ int main() {
     // Now, display the action tree
     
 
-    /*for (int i = 0; i < 100; i++) {
+    for (int i = 0; i < 20; i++) {
         shared_ptr<ActionNode> root = make_shared<ActionNode>(manualGame.getGameState(), Action(ActionType::ROOT));
         buildActionTree(root, 3, manualGame.getValidActions());
         displayActionTree(root);
@@ -91,7 +91,7 @@ int main() {
         applyAction(manualGame, bestAction);
         displayGameState(manualGame.getGameState());
         cout << "\n\n!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!\n\n" << endl;
-    }*/
+    }
 
     return 0;
 }
