@@ -15,6 +15,7 @@
 #include "Game.hpp"
 #include "Action.hpp"
 #include "GameState.hpp"
+#include "aiFunctions.hpp"
 
 using namespace std;
 
@@ -71,17 +72,25 @@ int main() {
     manualGame.playPokemon(0, randomPokemonFromHand);
     randomPokemonFromHand = rand() % currentGameState->playerHands[1].size();
     manualGame.playPokemon(1, randomPokemonFromHand);
-    shared_ptr<ActionNode> root = make_shared<ActionNode>(manualGame.getGameState(), Action(ActionType::ROOT));
-    buildActionTree(root, 3, manualGame.getValidActions());  // Build up to depth 3
+    manualGame.endTurn();
+
+    
 
     // Now, display the action tree
-    displayActionTree(root, 3);
-    /*for (int i = 0; i < 10; i++) {
+    
+
+    /*for (int i = 0; i < 100; i++) {
+        shared_ptr<ActionNode> root = make_shared<ActionNode>(manualGame.getGameState(), Action(ActionType::ROOT));
+        buildActionTree(root, 3, manualGame.getValidActions());
+        displayActionTree(root);
+        Action bestAction = findBestAction(root, 3, manualGame.getGameState()->currentPlayer);
         cout << "Turn " << i + 1 << endl;
-        auto currentGameState = manualGame.getGameState();
-        displayGameState(currentGameState);
-        manualGame.displayValidActions();
-        cout << "!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!" << endl;
+        cout << "\n";
+        bestAction.display();
+        cout << "\n";
+        applyAction(manualGame, bestAction);
+        displayGameState(manualGame.getGameState());
+        cout << "\n\n!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!\n\n" << endl;
     }*/
 
     return 0;

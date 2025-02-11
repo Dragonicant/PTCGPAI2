@@ -19,6 +19,8 @@ public:
     std::vector<char> currentEnergy;
 
     ActivePokemon(std::shared_ptr<Card> card);
+    // Copy constructor
+    ActivePokemon(const ActivePokemon& other);
 
     void addEnergy(char energyType);
     void removeEnergy(char energyType);
@@ -28,7 +30,10 @@ public:
 class Game {
 public:
     Game(std::shared_ptr<Deck> player1Deck, std::shared_ptr<Deck> player2Deck, bool silent = false);
-    Game(std::shared_ptr<GameState>& state, bool silent = false);
+    Game(const std::shared_ptr<GameState>& state, bool silent = false);
+
+    const std::shared_ptr<ActivePokemon>& getPlayerActiveSpot(int player) const;
+    const std::vector<std::shared_ptr<ActivePokemon>>& getPlayerBenchSpots(int player) const;
 
     void setSilent(bool silent);
 
@@ -45,7 +50,7 @@ public:
     bool playPokemon(int player, std::shared_ptr<Card> card);
     bool attachEnergy(std::shared_ptr<ActivePokemon> targetPokemon);
     void performAttack(Attack attack);
-    void removeCardFromHand(int player, std::shared_ptr<Card> cardToRemove);
+    void removeCardFromHand(int player, std::shared_ptr<Card> cardToRemove);    
     void displayBoard() const;
     void endTurn();
 
@@ -63,6 +68,8 @@ private:
     bool gameOver = false;
     int currentPlayer = 0;
     int winner = -1;
+
+    std::vector<int> damageDealt[2];  // Total damage dealt by each player
 
     bool silent;
 

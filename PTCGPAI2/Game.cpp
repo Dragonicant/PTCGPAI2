@@ -14,6 +14,13 @@ ActivePokemon::ActivePokemon(std::shared_ptr<Card> card)
     : pokemonCard(card), currentHP(card->hp), currentEnergy() {  // Assuming Card has an `hp` member
 }
 
+ActivePokemon::ActivePokemon(const ActivePokemon& other)
+    : pokemonCard(other.pokemonCard),  // Shared ownership of the Card
+    currentHP(other.currentHP),
+    currentEnergy(other.currentEnergy) {
+    // No need for deep copy of pokemonCard since it's a shared_ptr
+}
+
 // Method to add energy to the Pokemon's energy pool
 void ActivePokemon::addEnergy(char energyType) {
     currentEnergy.push_back(energyType);
@@ -68,9 +75,12 @@ Game::Game(shared_ptr<Deck> player1Deck, shared_ptr<Deck> player2Deck, bool sile
     // Draw 5 cards for each player
     drawInitialCards(0);  // Draw 5 cards for Player 1
     drawInitialCards(1);  // Draw 5 cards for Player 2
+
+    damageDealt->push_back(0);
+    damageDealt->push_back(0);
 }
 
-Game::Game(std::shared_ptr<GameState>& state, bool silent) 
+Game::Game(const std::shared_ptr<GameState>& state, bool silent) 
     : silent(silent) {
     // Restore player points
     playerPoints[0] = state->playerPoints[0];
@@ -80,13 +90,19 @@ Game::Game(std::shared_ptr<GameState>& state, bool silent)
     playerHands[0] = state->playerHands[0];
     playerHands[1] = state->playerHands[1];
 
-    // Restore active Pokémon
-    playerActiveSpots[0] = state->playerActiveSpots[0];
-    playerActiveSpots[1] = state->playerActiveSpots[1];
+    // Restore active Pokémon (deep copy)
+    playerActiveSpots[0] = state->playerActiveSpots[0] ?
+        std::make_shared<ActivePokemon>(*state->playerActiveSpots[0]) : nullptr;
+    playerActiveSpots[1] = state->playerActiveSpots[1] ?
+        std::make_shared<ActivePokemon>(*state->playerActiveSpots[1]) : nullptr;
 
-    // Restore bench Pokémon
-    playerBenchSpots[0] = state->playerBenchSpots[0];
-    playerBenchSpots[1] = state->playerBenchSpots[1];
+    // Restore bench Pokémon (deep copy)
+    for (const auto& pokemon : state->playerBenchSpots[0]) {
+        playerBenchSpots[0].push_back(std::make_shared<ActivePokemon>(*pokemon));
+    }
+    for (const auto& pokemon : state->playerBenchSpots[1]) {
+        playerBenchSpots[1].push_back(std::make_shared<ActivePokemon>(*pokemon));
+    }
 
     // Restore available energy
     playerAvailableEnergy[0] = state->playerAvailableEnergy[0];
@@ -105,6 +121,20 @@ Game::Game(std::shared_ptr<GameState>& state, bool silent)
     gameOver = state->gameOver;
     currentPlayer = state->currentPlayer;
     winner = state->winner;
+    damageDealt->push_back(0);
+    damageDealt->push_back(0);
+    damageDealt->at(0) = state->damageDealt[0];
+    damageDealt->at(0) = state->damageDealt[1];
+}
+
+// Getter for playerActiveSpots
+const std::shared_ptr<ActivePokemon>& Game::getPlayerActiveSpot(int player) const {
+    return playerActiveSpots[player];
+}
+
+// Getter for playerBenchSpots
+const std::vector<std::shared_ptr<ActivePokemon>>& Game::getPlayerBenchSpots(int player) const {
+    return playerBenchSpots[player];
 }
 
 // Set silent mode
@@ -123,13 +153,19 @@ std::shared_ptr<GameState> Game::getGameState() {
     state->playerHandSize[0] = playerHands[0].size();
     state->playerHandSize[1] = playerHands[1].size();
 
-    // Set active Pokémon
-    state->playerActiveSpots[0] = playerActiveSpots[0];
-    state->playerActiveSpots[1] = playerActiveSpots[1];
+    // Set active Pokémon (deep copy)
+    state->playerActiveSpots[0] = playerActiveSpots[0] ?
+        std::make_shared<ActivePokemon>(*playerActiveSpots[0]) : nullptr;
+    state->playerActiveSpots[1] = playerActiveSpots[1] ?
+        std::make_shared<ActivePokemon>(*playerActiveSpots[1]) : nullptr;
 
-    // Set bench Pokémon
-    state->playerBenchSpots[0] = playerBenchSpots[0];
-    state->playerBenchSpots[1] = playerBenchSpots[1];
+    // Set bench Pokémon (deep copy)
+    for (const auto& pokemon : playerBenchSpots[0]) {
+        state->playerBenchSpots[0].push_back(std::make_shared<ActivePokemon>(*pokemon));
+    }
+    for (const auto& pokemon : playerBenchSpots[1]) {
+        state->playerBenchSpots[1].push_back(std::make_shared<ActivePokemon>(*pokemon));
+    }
 
     // Set available energy
     state->playerAvailableEnergy[0] = playerAvailableEnergy[0];
@@ -153,6 +189,9 @@ std::shared_ptr<GameState> Game::getGameState() {
 
     // Set winner
     state->winner = winner;
+
+    state->damageDealt.at(0) = damageDealt->at(0);
+    state->damageDealt.at(1) = damageDealt->at(1);
 
     return state;
 }
@@ -206,13 +245,14 @@ vector<Action> Game::getValidActions() {
     }
 
     //Attaching energy actions
-    if (playerAvailableEnergy[currentPlayer] != 'X')
+    if (playerAvailableEnergy[currentPlayer] != 'X') {
         for (auto& pokemon : playerBenchSpots[currentPlayer]) {
             validActions.push_back(Action(ActionType::ENERGY, pokemon));
         }
-    if (playerActiveSpots[currentPlayer] != nullptr) {
-        validActions.push_back(Action(ActionType::ENERGY, playerActiveSpots[currentPlayer]));
-    }
+        if (playerActiveSpots[currentPlayer] != nullptr) {
+            validActions.push_back(Action(ActionType::ENERGY, playerActiveSpots[currentPlayer]));
+        }
+    } 
 
     //Attacking actions
     if (playerActiveSpots[currentPlayer]) {
@@ -415,6 +455,7 @@ void Game::performAttack(Attack attack) {
 
     // Reduce defender's HP
     defender->currentHP -= damage;
+    damageDealt->at(currentPlayer) += damage;
     if (defender->currentHP <= 0) {
         if (!silent)
             cout << defender->pokemonCard->name << " is knocked out!" << endl;
@@ -437,6 +478,7 @@ void Game::performAttack(Attack attack) {
             cout << playerActiveSpots[1 - currentPlayer]->pokemonCard->name << " moves to the active spot!" << endl;
         }
     }
+    endTurn(); // attacks always end the turn
 }
 
 // Method to remove the card from the player's hand
@@ -451,24 +493,20 @@ void Game::removeCardFromHand(int player, shared_ptr<Card> cardToRemove) {
 // Function to display the board with the specific ASCII art pattern
 void Game::displayBoard() const {
     // Display Player 2's Bench (top row)
-    if (!silent)
-        cout << (playerBenchSpots[1].size() > 0 ? playerBenchSpots[1][0]->pokemonCard->name : "Empty") << "  "
-            << (playerBenchSpots[1].size() > 1 ? playerBenchSpots[1][1]->pokemonCard->name : "Empty") << "  "
-            << (playerBenchSpots[1].size() > 2 ? playerBenchSpots[1][2]->pokemonCard->name : "Empty") << endl;
+    cout << (playerBenchSpots[1].size() > 0 ? playerBenchSpots[1][0]->pokemonCard->name : "Empty") << "  "
+        << (playerBenchSpots[1].size() > 1 ? playerBenchSpots[1][1]->pokemonCard->name : "Empty") << "  "
+        << (playerBenchSpots[1].size() > 2 ? playerBenchSpots[1][2]->pokemonCard->name : "Empty") << endl;
 
     // Display Player 2's Active (middle row)
-    if (!silent)
-        cout << "        " << (playerActiveSpots[1] != nullptr ? playerActiveSpots[1]->pokemonCard->name : "Empty") << endl;
+    cout << "        " << (playerActiveSpots[1] != nullptr ? playerActiveSpots[1]->pokemonCard->name : "Empty") << endl;
 
     // Display Player 1's Active (middle row)
-    if (!silent)
-        cout << "        " << (playerActiveSpots[0] != nullptr ? playerActiveSpots[0]->pokemonCard->name : "Empty") << endl;
+    cout << "        " << (playerActiveSpots[0] != nullptr ? playerActiveSpots[0]->pokemonCard->name : "Empty") << endl;
 
     // Display Player 1's Bench (bottom row)
-    if (!silent)
-        cout << (playerBenchSpots[0].size() > 0 ? playerBenchSpots[0][0]->pokemonCard->name : "Empty") << "  "
-            << (playerBenchSpots[0].size() > 1 ? playerBenchSpots[0][1]->pokemonCard->name : "Empty") << "  "
-            << (playerBenchSpots[0].size() > 2 ? playerBenchSpots[0][2]->pokemonCard->name : "Empty") << endl;
+    cout << (playerBenchSpots[0].size() > 0 ? playerBenchSpots[0][0]->pokemonCard->name : "Empty") << "  "
+        << (playerBenchSpots[0].size() > 1 ? playerBenchSpots[0][1]->pokemonCard->name : "Empty") << "  "
+        << (playerBenchSpots[0].size() > 2 ? playerBenchSpots[0][2]->pokemonCard->name : "Empty") << endl;
     }
 
 // Method to start a new turn for the player
@@ -493,5 +531,7 @@ void Game::addEnergyToPlayer(int player) {
     if (!energyTypes.empty()) {
         char selectedEnergy = energyTypes[rand() % energyTypes.size()];  // Choose a random energy type
         playerAvailableEnergy[player] = selectedEnergy;  // Add the selected energy to the player's available energy
+        if(!silent)
+            cout << selectedEnergy << " has been added to Player " << currentPlayer + 1 << endl;
     }
 }

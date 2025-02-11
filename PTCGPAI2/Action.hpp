@@ -10,6 +10,7 @@
 class ActivePokemon;
 struct GameState;
 class Card;
+class Game;
 
 enum class ActionType { PLAY, ATTACK, END_TURN, ENERGY, ROOT };
 
@@ -35,12 +36,16 @@ struct ActionNode {
     ActionNode(std::shared_ptr<GameState> state, Action action);
 };
 
+void applyAction(Game& game, const Action& action);
 std::pair<std::shared_ptr<GameState>, std::vector<Action>> applyAction(const std::shared_ptr<GameState>& currentState, const Action& action);
 
 std::vector<std::shared_ptr<ActionNode>> generateActionTree(const std::shared_ptr<GameState>& currentState, std::vector<Action> validActions);
 
 void buildActionTree(std::shared_ptr<ActionNode> node, int depth, const std::vector<Action>& validActions);
 
+void displayActionTree(const shared_ptr<ActionNode>& node);
 void displayActionTree(const std::shared_ptr<ActionNode>& node, int depth, const string& prefix = "");
+
+int findMaxDepth(const shared_ptr<ActionNode>& node);
 
 #endif // ACTION_HPP

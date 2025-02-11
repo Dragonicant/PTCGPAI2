@@ -129,6 +129,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Action.hpp" />
+    <ClInclude Include="aiFunctions.hpp" />
     <ClInclude Include="deck.hpp" />
     <ClInclude Include="Game.hpp" />
     <ClInclude Include="stages.hpp" />
@@ -137,6 +138,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Action.cpp" />
+    <ClCompile Include="aiFunctions.cpp" />
     <ClCompile Include="Game.cpp" />
     <ClCompile Include="GameState.cpp" />
     <ClCompile Include="GameState.hpp" />

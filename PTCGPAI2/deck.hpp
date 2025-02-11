@@ -104,16 +104,6 @@ public:
             return a.second > b.second; // Sort descending by count
             });
 
-        // Output sorted energy counts
-        cout << "Energy Type Counts:\n";
-        for (size_t i = 0; i < sortedEnergy.size(); i++) {
-            cout << sortedEnergy[i].first << " - " << sortedEnergy[i].second;
-            if (i < sortedEnergy.size() - 1) {
-                cout << ", ";
-            }
-        }
-        cout << endl;
-
         // Compute total energy count
         int totalEnergy = 0;
         for (const auto& [type, count] : sortedEnergy) {
