@@ -228,6 +228,10 @@ void Game::checkForWinner() {
     }
 }
 
+bool Game::isWinner() {
+    return gameOver;
+}
+
 vector<Action> Game::getValidActions() {
     vector<Action> validActions;
 
@@ -397,13 +401,17 @@ bool Game::playPokemon(int player, shared_ptr<Card> card) {
         // If no Pokemon is in the active spot, create an ActivePokemon and place it there
         playerActiveSpots[player] = make_shared<ActivePokemon>(card); // Assume the original card has an `hp` field
         if (!silent)
-            cout << "Player " << player + 1 << " played " << card->name << " to their active spot." << endl;
+            cout << "Player " << player + 1 << " played "
+            << "\033[1;32m" << card->name << "\033[0m"  // Green color for the card name
+            << " to their active spot." << endl;
     }
     else if (playerActiveSpots[player] != nullptr && playerBenchSpots[player].size() < 5) {
         // If there is a Pokemon in the active spot, create an ActivePokemon and place it on the bench
         playerBenchSpots[player].push_back(make_shared<ActivePokemon>(card));
         if (!silent)
-            cout << "Player " << player + 1 << " played " << card->name << " to their bench." << endl;
+            cout << "Player " << player + 1 << " played "
+            << "\033[1;32m" << card->name << "\033[0m"  // Green color for the card name
+            << " to their bench." << endl;
     }
     else {
         // No space to play Pokemon
@@ -417,6 +425,26 @@ bool Game::playPokemon(int player, shared_ptr<Card> card) {
     return true;
 }
 
+// for moving pokemon from bench to active when pokemon is knocked out
+void Game::playPokemonFromBench(int player, shared_ptr<ActivePokemon> targetPokemon) {
+    // Find the target Pokémon in the bench
+    auto it = find_if(playerBenchSpots[currentPlayer].begin(), playerBenchSpots[currentPlayer].end(), [&](const shared_ptr<ActivePokemon>& pokemon) {
+        return pokemon == targetPokemon;
+        });
+
+    // If the target Pokémon is found in the bench
+    if (it != playerBenchSpots[currentPlayer].end()) {
+        // Remove the target Pokémon from the bench
+        playerBenchSpots[currentPlayer].erase(it);
+
+        // Set the target Pokémon as the new active Pokémon
+        playerActiveSpots[currentPlayer] = targetPokemon;
+    }
+    else {
+        cerr << "Error: Target Pokemon not found in bench!" << endl;
+    }
+}
+
 bool Game::attachEnergy(shared_ptr<ActivePokemon> targetPokemon) {
     // Check if the player has energy available
     if (playerAvailableEnergy[currentPlayer] == 'X') {
@@ -428,8 +456,28 @@ bool Game::attachEnergy(shared_ptr<ActivePokemon> targetPokemon) {
     // Add energy to the chosen Pokemon
     targetPokemon->currentEnergy.push_back(playerAvailableEnergy[currentPlayer]);
 
-    if (!silent)
-        cout << "Player " << currentPlayer + 1 << " attached " << playerAvailableEnergy[currentPlayer] << " energy to " << targetPokemon->pokemonCard->name << ".\n";
+    if (!silent) {
+        string energyColor;
+        switch (playerAvailableEnergy[currentPlayer]) {
+        case 'G': energyColor = "\033[32m"; break; // Green (Grass)
+        case 'F': energyColor = "\033[31m"; break; // Red (Fire)
+        case 'W': energyColor = "\033[34m"; break; // Blue (Water)
+        case 'L': energyColor = "\033[33m"; break; // Yellow (Lightning)
+        case 'P': energyColor = "\033[35m"; break; // Magenta (Psychic)
+        case 'I': energyColor = "\033[38;5;130m"; break; // Brown/Orange (Fighting)
+        case 'D': energyColor = "\033[90m"; break; // Dark Gray (Darkness)
+        case 'M': energyColor = "\033[37m"; break; // Light Gray (Metal)
+        default:  energyColor = "\033[0m"; break; // Reset
+        }
+
+        string pokemonColor = "\033[32m"; // Green for Pokémon names
+        string resetColor = "\033[0m";    // Reset color
+
+        cout << "Player " << currentPlayer + 1 << " attached "
+            << energyColor << playerAvailableEnergy[currentPlayer] << resetColor
+            << " energy to " << pokemonColor << targetPokemon->pokemonCard->name
+            << resetColor << ".\n";
+    }
     playerAvailableEnergy[currentPlayer] = 'X';
     return true;
 }
@@ -448,9 +496,10 @@ void Game::performAttack(Attack attack) {
     int damage = attack.damage;       // Use the damage from the provided attack
 
     if (!silent)
-        cout << "Player " << currentPlayer + 1 << "'s " << attacker->pokemonCard->name
-            << " attacks " << defender->pokemonCard->name
-            << " using " << attackName << " for " << damage << " damage!" << endl;
+        cout << "Player " << currentPlayer + 1 << "'s \033[32m" << attacker->pokemonCard->name << "\033[0m "
+        << "\033[31mattacks\033[0m "
+        << "\033[32m" << defender->pokemonCard->name << "\033[0m "
+        << "using \033[31m" << attackName << "\033[0m for \033[31m" << damage << "\033[0m damage!" << endl;
 
     // Reduce defender's HP
     defender->currentHP -= damage;
@@ -474,8 +523,10 @@ void Game::performAttack(Attack attack) {
             // Promote a Pokemon from the bench to active
             playerActiveSpots[1 - currentPlayer] = playerBenchSpots[1 - currentPlayer].front();
             playerBenchSpots[1 - currentPlayer].erase(playerBenchSpots[1 - currentPlayer].begin());
-            cout << playerActiveSpots[1 - currentPlayer]->pokemonCard->name << " moves to the active spot!" << endl;
+            if(!silent)
+                cout << playerActiveSpots[1 - currentPlayer]->pokemonCard->name << " moves to the active spot!" << endl;
         }
+        checkForWinner();
     }
     endTurn(); // attacks always end the turn
 }
@@ -511,7 +562,7 @@ void Game::displayBoard() const {
 // Method to start a new turn for the player
 void Game::endTurn() {
     if (!silent)
-        cout << "Player " << currentPlayer + 1 << "'s turn has ended." << endl;
+        cout << "Player " << currentPlayer + 1 << "'s \033[35mturn\033[0m has \033[35mended\033[0m." << endl;
     playerAvailableEnergy[currentPlayer] = 'X';  // Clear the available energy
     // Change turn to the next player
     currentPlayer = (currentPlayer + 1) % 2;
@@ -530,7 +581,22 @@ void Game::addEnergyToPlayer(int player) {
     if (!energyTypes.empty()) {
         char selectedEnergy = energyTypes[rand() % energyTypes.size()];  // Choose a random energy type
         playerAvailableEnergy[player] = selectedEnergy;  // Add the selected energy to the player's available energy
-        if(!silent)
-            cout << selectedEnergy << " has been added to Player " << currentPlayer + 1 << endl;
+        if (!silent) {
+            string colorCode;
+            switch (selectedEnergy) {
+            case 'G': colorCode = "\033[32m"; break; // Green (Grass)
+            case 'F': colorCode = "\033[31m"; break; // Red (Fire)
+            case 'W': colorCode = "\033[34m"; break; // Blue (Water)
+            case 'L': colorCode = "\033[33m"; break; // Yellow (Lightning)
+            case 'P': colorCode = "\033[35m"; break; // Magenta (Psychic)
+            case 'I': colorCode = "\033[38;5;130m"; break; // Brown/Orange (Fighting)
+            case 'D': colorCode = "\033[90m"; break; // Dark Gray (Darkness)
+            case 'M': colorCode = "\033[37m"; break; // Light Gray (Metal)
+            default:  colorCode = "\033[0m"; break; // Reset
+            }
+
+            cout << colorCode << selectedEnergy << "\033[0m has been added to Player "
+                << currentPlayer + 1 << endl;
+        }
     }
 }

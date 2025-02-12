@@ -32,6 +32,9 @@ void Action::display() const {
     case ActionType::ENERGY:
         cout << COLOR_BLUE << "Attach energy to " << targetPokemon->pokemonCard->name << COLOR_RESET << endl;
         break;
+    case ActionType::BENCH:
+        cout << COLOR_GREEN << "Promote " << targetPokemon->pokemonCard->name << " to active spot" << COLOR_RESET << endl;
+        break;
     case ActionType::ROOT:
         cout << COLOR_MAGENTA << "ROOT CASE" << COLOR_RESET << endl;
         break;
@@ -47,6 +50,7 @@ string displayActionName(shared_ptr<ActionNode> node) {
     case ActionType::ATTACK: return "Attack";
     case ActionType::END_TURN: return "End Turn";
     case ActionType::ENERGY: return "Energy";
+    case ActionType::BENCH: return "Play from Bench";
     default: return "Unknown";
     }
 }
@@ -88,6 +92,9 @@ void applyAction(Game& game, const Action& action) {
         }
         break;
     }
+    case ActionType::BENCH:
+        game.playPokemonFromBench(game.getGameState()->currentPlayer, action.targetPokemon);
+        break;
     case ActionType::END_TURN:
         game.endTurn();
         break;
@@ -168,21 +175,55 @@ vector<shared_ptr<ActionNode>> generateActionTree(const shared_ptr<GameState>& c
 }
 
 // Recursively build the action tree up to a specified depth
-void buildActionTree(shared_ptr<ActionNode> node, int depth, const vector<Action>& validActions) {
-    if (depth == 0) return;  // Stop expanding after a set depth
+void buildActionTree(shared_ptr<ActionNode> node, int maxTurns, int currentTurn, const vector<Action>& validActions) {
+    // Base case: stop if we've reached the maximum number of turns
+    if (currentTurn >= maxTurns) {
+        return;
+    }
 
-    // Generate possible actions from the current state
-    vector<shared_ptr<ActionNode>> children = generateActionTree(node->state, validActions);
-    node->children = children;
+    // Check if a forced action is required
+    bool forcedActionRequired = isForcedActionRequired(node->state);
 
-    // Recursively expand the children, unless the action is END_TURN
-    for (auto& child : children) {
-        if (child->action.type != ActionType::END_TURN && child->action.type != ActionType::ATTACK) {
-            // Get the next valid actions for this child's state
-            auto [nextState, nextValidActions] = applyAction(node->state, child->action);
+    if (forcedActionRequired) {
+        // Generate only the actions that satisfy the forced action
+        vector<Action> forcedActions = getForcedActions(node->state);
 
-            // Recursively expand with the new valid actions
-            buildActionTree(child, depth - 1, nextValidActions);
+        for (const Action& action : forcedActions) {
+            //cout << "Turn " << currentTurn << ": Processing FORCED action ";
+            //action.display();
+
+            // Apply the forced action to create a new game state
+            auto [newState, nextValidActions] = applyAction(node->state, action);
+
+            // Create a new child node for this forced action
+            auto child = make_shared<ActionNode>(newState, action);
+            node->children.push_back(child);
+
+            // Recursively build the tree for the next state
+            buildActionTree(child, maxTurns, currentTurn, nextValidActions);
+        }
+    }
+    else {
+        // No forced action required; process all valid actions
+        for (const Action& action : validActions) {
+
+            // Apply the action to create a new game state
+            auto [newState, nextValidActions] = applyAction(node->state, action);
+
+            // Create a new child node for this action
+            auto child = make_shared<ActionNode>(newState, action);
+            node->children.push_back(child);
+
+            // If the action ends the turn, increment the turn counter
+            int nextTurn = currentTurn;
+            if (action.type == ActionType::END_TURN) {
+                nextTurn++;
+            }
+
+            // Recursively build the tree for the next state, but check if the game is over
+            if (!newState->gameOver) {
+                buildActionTree(child, maxTurns, nextTurn, nextValidActions);
+            }
         }
     }
 }
@@ -228,4 +269,37 @@ int findMaxDepth(const shared_ptr<ActionNode>& node) {
     }
 
     return 1 + maxChildDepth; // Add 1 for the current node
+}
+
+bool isForcedActionRequired(const shared_ptr<GameState>& state) {
+    // Check if the active spot is empty for the current player
+    return state->playerActiveSpots[state->currentPlayer] == nullptr;
+}
+vector<Action> getForcedActions(const shared_ptr<GameState>& state) {
+    vector<Action> forcedActions;
+
+    // Scenario 1: At the start of the game (no Pokémon on bench)
+    if (state->playerBenchSpots[state->currentPlayer].empty()) {
+        // Get the current player's hand
+        const auto& hand = state->playerHands[state->currentPlayer];
+
+        // Generate actions for playing a Basic Pokémon from hand to the active spot
+        for (const auto& card : hand) {
+            if (card->stage == 0) { // Ensure it's a Basic Pokémon
+                forcedActions.push_back(Action(ActionType::PLAY, card));
+            }
+        }
+    }
+    // Scenario 2: During the game (active Pokémon was knocked out)
+    else {
+        // Get the current player's bench
+        const auto& bench = state->playerBenchSpots[state->currentPlayer];
+
+        // Generate actions for promoting a Pokémon from the bench to the active spot
+        for (const auto& card : bench) {
+            forcedActions.push_back(Action(ActionType::BENCH, card));
+        }
+    }
+
+    return forcedActions;
 }

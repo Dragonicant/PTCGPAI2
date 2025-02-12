@@ -66,31 +66,23 @@ int main() {
 
     Game manualGame(manualDeck1Ptr, manualDeck2Ptr);
 
-    // Display hands for both players in manual game
-    auto currentGameState = manualGame.getGameState();
-    int randomPokemonFromHand = rand() % currentGameState->playerHands[0].size();
-    manualGame.playPokemon(0, randomPokemonFromHand);
-    randomPokemonFromHand = rand() % currentGameState->playerHands[1].size();
-    manualGame.playPokemon(1, randomPokemonFromHand);
-    manualGame.endTurn();
-
-    
-
-    // Now, display the action tree
-    
-
-    for (int i = 0; i < 20; i++) {
+    int i = 0;
+    cout << "\n\n!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!\n\n" << endl;
+    cout << "Turn " << i + 1 << endl;
+    while (i < 20 && !manualGame.isWinner()) {
         shared_ptr<ActionNode> root = make_shared<ActionNode>(manualGame.getGameState(), Action(ActionType::ROOT));
-        buildActionTree(root, 3, manualGame.getValidActions());
-        displayActionTree(root);
-        Action bestAction = findBestAction(root, 3, manualGame.getGameState()->currentPlayer);
-        cout << "Turn " << i + 1 << endl;
-        cout << "\n";
-        bestAction.display();
+        buildActionTree(root, 4, 0, manualGame.getValidActions());
+        //displayActionTree(root);
+        Action bestAction = findBestAction(root, 20, manualGame.getGameState()->currentPlayer);
+        
         cout << "\n";
         applyAction(manualGame, bestAction);
-        displayGameState(manualGame.getGameState());
-        cout << "\n\n!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!\n\n" << endl;
+        if ((bestAction.type == ActionType::END_TURN || bestAction.type == ActionType::ATTACK) && !manualGame.isWinner()) {
+            displayGameState(manualGame.getGameState());
+            cout << "\n\n!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!-!\n\n" << endl;
+            i++;
+            cout << "Turn " << i + 1 << endl;
+        }
     }
 
     return 0;

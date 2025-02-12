@@ -40,6 +40,7 @@ public:
     std::shared_ptr<GameState> getGameState();
     bool hasNoPokemon(int player);
     void checkForWinner();
+    bool isWinner();
     std::vector<Action> getValidActions();
     void displayValidActions();
     void shuffleDeck(int player);
@@ -48,6 +49,7 @@ public:
     void showHands() const;
     bool playPokemon(int player, int cardFromHand);
     bool playPokemon(int player, std::shared_ptr<Card> card);
+    void playPokemonFromBench(int player, std::shared_ptr<ActivePokemon> targetPokemon);
     bool attachEnergy(std::shared_ptr<ActivePokemon> targetPokemon);
     void performAttack(Attack attack);
     void removeCardFromHand(int player, std::shared_ptr<Card> cardToRemove);    
